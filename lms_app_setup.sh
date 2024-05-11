@@ -9,7 +9,7 @@ sudo apt -y install nginx
 sudo rm -rf /var/www/html
 
 # clone the repository
-git clone git clone https://github.com/username/repository.git
+git clone https://github.com/username/repository.git
 
 #copy files from repo to /var/www/html
 sudo cp /path/to/repository/files/* /var/www/html/
