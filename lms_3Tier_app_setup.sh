@@ -1,94 +1,68 @@
-#!/bin/sh
-echo"Setting up 3 Tier web application"
+#!/bin/bash
 
-echo"Database Layer for LMS"
+# Install PostgreSQL
+sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+sudo apt-get -y install postgresql
+sudo ss -ntpl
 
-#Install Postgres
-sudo install postgresql
-sudo  ss -ntpl
+echo "Postgres Installed successfully!"
 
-#set password
-sudo su - postgres
-psql
-\password
+# Set PostgreSQL password
 
-#To show table structure
-\dt
+sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'Qwerty123';"
+sudo systemctl restart postgresql
 
-echo"Applicatio layer for LMS"
+echo "Postgres password setup completed successfully!"
 
-#install nodejs
-node -v
-npm -v
+# Install Node.js
 curl -sL https://deb.nodesource.com/setup_16.x | sudo bash -
 sudo apt-get install -y nodejs
 node -v
 npm -v
+echo "Node.js and npm Installed successfully!"
 
-#Build API for LMS
-git clone https://github.com/DivyaTech29/lms.git
-ls
-cd lms
-cd lms/api
-ls
-vi .env
+# Clone the code
+git clone -b dev https://github.com/murali03031995/lms.git
 
-#update values
+# Build backend
+
+echo "Backend deployment started"
+
+cd ~/lms/api
+
+cat <<EOF | sudo tee .env
 MODE=production
 PORT=8080
-DATABASE_URL=postgresql://postgres:your-password@localhost:5432/postgres
-
-#To get dependencies
-npm install
-
-#for sql file
-ls 
-ls prisma
-ls prisma/migrations
-ls prisma/migrations/20221110085013_init
-cat prisma/migrations/20221110085013_init/migration.sql
-
-#To get table structure in postgresql
-sudo npx db generate
-
-#To generate prisma to postgresql and database is in sync
-sudo npx prisma generate
+DATABASE_URL=postgresql://postgres:Qwerty123@localhost:5432/postgres
+EOF
+sudo npm install
+sudo npm install -g pm2
 sudo npx prisma db push
+sudo npm run build
 
-#To run the build
-npm run build
-ls
-ls build
+echo "Backend build completed"
 
-# to start an application
-node build/index.js
-
-echo"Frontend layer for LMS application"
-
-#To connect backend to frontend
-ls
-ls lms/webapp
-vi .env
-
-#update values
-VITE_API_URL=http://public-ip:8080/api
-
-#To get dependencies
-npm install
-ls
-
-#To run build
-npm run build
-ls
-ls dist
-
-#to run the application need NGINX
-sudo apt -y install nginx
+pm2 start -f build/index.js
 sudo ss -ntpl
-ls /var/www/html
-sudo rm --rf /var/www/html/index.nginx-debian.html
-sudo cp -r dist/* /var/www/html
-
-echo"LMS application is deployed succesfully using shell script"
 
 
+# Build frontend
+
+echo "frontend deployment started"
+cd ~/lms/webapp/
+cat <<EOF | sudo tee .env
+VITE_API_URL=http://Public-ip:8080/api
+EOF
+npm install
+npm run build
+
+echo "Frontend build completed"
+
+sudo apt -y update
+sudo apt -y install nginx
+sudo rm -rf /var/www/html/*
+sudo cp -r /home/ubuntu/lms/webapp/dist/* /var/www/html
+sudo systemctl restart nginx
+
+echo "Deployment completed successfully!"
