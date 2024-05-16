@@ -23,8 +23,7 @@ npm -v
 echo "Node.js and npm Installed successfully!"
 
 # Clone the code
-git clone -b dev https://github.com/murali03031995/lms.git
-
+git clone https://github.com/DivyaTech29/lms.git
 # Build backend
 
 echo "Backend deployment started"
@@ -46,13 +45,16 @@ echo "Backend build completed"
 pm2 start -f build/index.js
 sudo ss -ntpl
 
+# Get public IP address dynamically
+INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+PUBLIC_IP=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --query "Reservations[0].Instances[0].PublicIpAddress" --output text)
 
 # Build frontend
 
 echo "frontend deployment started"
 cd ~/lms/webapp/
 cat <<EOF | sudo tee .env
-VITE_API_URL=http://Public-ip:8080/api
+VITE_API_URL=http://${PUBLIC_IP}:8080/api
 EOF
 npm install
 npm run build
